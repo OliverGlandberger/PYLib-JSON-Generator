@@ -54,7 +54,7 @@ add_custom_target(${OUTPUT_PROJECT_NAME}_SetupPythonProject ALL
 
 # Add chmod +x to 'main.py' (Unix-like systems)
 if(UNIX)
-    add_custom_command(TARGET SetupPythonProject POST_BUILD
+    add_custom_command(TARGET ${OUTPUT_PROJECT_NAME}_SetExecutablePremission POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E chmod +x "${OUTPUT_PROJECT_DIR}/${MAIN_SCRIPT}"
         COMMENT "Setting executable permission on main.py"
     )
@@ -80,24 +80,43 @@ foreach(FILE ${SRC_FILES} ${MODULE_FILES} ${UTIL_FILES} ${TEST_FILES})
         set(DEST_DIR "${OUTPUT_PROJECT_DIR}")
     endif()
     # Copy files to appropriate location(s)
-    add_custom_command(TARGET SetupPythonProject POST_BUILD
+    add_custom_command(TARGET ${OUTPUT_PROJECT_NAME}_CopyProjectFiles POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy "${FILE}" "${DEST_DIR}/"
         COMMENT "Copying ${FILE} to output directory ${DEST_DIR}"
     )
 endforeach()
 
+# Glob all test directories from the fetched modules
+file(GLOB_RECURSE MODULE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps/*/tests")
+# Convert the list to a comma-separated string
+string(REPLACE ";" "," MODULES_TEST_FOLDER_LIST "\"${MODULE_TEST_DIRS}\"")
+# Pass the list into settings.json
+set(MODULE_TEST_FOLDERS ${MODULES_TEST_FOLDER_LIST})
+configure_file(
+    ${CMAKE_SOURCE_DIR}/settings.json.in
+    ${CMAKE_BINARY_DIR}/settings.json @ONLY
+)
+
 # Enable testing and run tests with the system Python interpreter
 enable_testing()
+# Add native tests
 add_test(NAME PythonTests
     COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${OUTPUT_PROJECT_DIR}/tests"
     WORKING_DIRECTORY "${OUTPUT_PROJECT_DIR}"
 )
+# Add tests for imported modules explicitly
+foreach(TEST_DIR ${MODULE_TEST_DIRS})
+    add_test(NAME ModuleTests_${TEST_DIR}
+        COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${TEST_DIR}" -p "test_*.py"
+        WORKING_DIRECTORY "${TEST_DIR}"
+    )
+endforeach()
 
 # Optionally initialize Git in the output project
 if(AUTO_GIT_INIT)
     add_custom_command(
-        TARGET SetupPythonProject POST_BUILD
+        TARGET ${OUTPUT_PROJECT_NAME}_SetupGit POST_BUILD
         COMMAND git init "${OUTPUT_PROJECT_DIR}"
         WORKING_DIRECTORY "${OUTPUT_PROJECT_DIR}"
         COMMENT "Auto-initializing Git repository in output project"
@@ -106,7 +125,7 @@ endif()
 
 # Ensure .vscode directory exists
 add_custom_command(
-    TARGET SetupPythonProject POST_BUILD
+    TARGET ${OUTPUT_PROJECT_NAME}_SetupVSCodeDirectory POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${VSCODE_SETTINGS_DIR}"
 )
 # Configure the settings.json file from the template
