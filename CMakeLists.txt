@@ -60,19 +60,26 @@ if(UNIX)
     )
 endif()
 
-# Copy additional modules, utilities, and tests to output project
+# Copy project files
+file(GLOB SRC_FILES    "${CMAKE_SOURCE_DIR}/src/*.py")
 file(GLOB MODULE_FILES "${CMAKE_SOURCE_DIR}/modules/*.py")
-file(GLOB UTIL_FILES "${CMAKE_SOURCE_DIR}/utilities/*.py")
-file(GLOB TEST_FILES "${CMAKE_SOURCE_DIR}/tests/*.py")
+file(GLOB UTIL_FILES   "${CMAKE_SOURCE_DIR}/utilities/*.py")
+file(GLOB TEST_FILES   "${CMAKE_SOURCE_DIR}/tests/*.py")
 
-foreach(FILE ${MODULE_FILES} ${UTIL_FILES} ${TEST_FILES})
-    # Determine the destination folder based on file type
-    if(FILE IN_LIST TEST_FILES)
+foreach(FILE ${SRC_FILES} ${MODULE_FILES} ${UTIL_FILES} ${TEST_FILES})
+    # Determine the destination folder
+    if(FILE IN_LIST SRC_FILES)
+        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/src")
+    elseif(FILE IN_LIST MODULE_FILES)
+        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/modules")
+    elseif(FILE IN_LIST UTIL_FILES)
+        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/utilities")
+    elseif(FILE IN_LIST TEST_FILES)
         set(DEST_DIR "${OUTPUT_PROJECT_DIR}/tests")
     else()
         set(DEST_DIR "${OUTPUT_PROJECT_DIR}")
     endif()
-    # Copy files to the appropriate location
+    # Copy files to appropriate location(s)
     add_custom_command(TARGET SetupPythonProject POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy "${FILE}" "${DEST_DIR}/"
