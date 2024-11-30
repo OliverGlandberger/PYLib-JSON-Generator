@@ -1,0 +1,4 @@
+numpy
+loguru
+#pandas
+#requests
