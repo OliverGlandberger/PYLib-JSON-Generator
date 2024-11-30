@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(PythonProjectTemplate LANGUAGES NONE)
+project(PYLib-JSON-Generator LANGUAGES NONE)
 
 # Load optional configurations
 include("${CMAKE_SOURCE_DIR}/config.cmake" OPTIONAL)
