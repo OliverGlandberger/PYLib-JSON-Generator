@@ -36,20 +36,20 @@ set(MAIN_SCRIPT "main.py")
 
 # Install Python dependencies from requirements.txt
 if(EXISTS ${REQUIREMENTS_FILE})
-    add_custom_target(InstallPythonDependencies ALL
+    add_custom_target(${OUTPUT_PROJECT_NAME}_InstallPythonDependencies ALL
         COMMAND ${PIP_EXECUTABLE} install -r ${REQUIREMENTS_FILE}
-        COMMENT "Installing Python dependencies from requirements.txt"
+        COMMENT "Installing Python dependencies for ${OUTPUT_PROJECT_NAME} from requirements.txt"
     )
 else()
-    message(WARNING "requirements.txt not found. Skipping Python dependency installation.")
+    message(WARNING "requirements.txt not found for ${OUTPUT_PROJECT_NAME}. Skipping Python dependency installation.")
 endif()
 
 # Create the output project directory and copy main.py
-add_custom_target(SetupPythonProject ALL
+add_custom_target(${OUTPUT_PROJECT_NAME}_SetupPythonProject ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_PROJECT_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/${MAIN_SCRIPT}" "${OUTPUT_PROJECT_DIR}/"
-    COMMENT "Setting up output Python project with main.py as entry point"
-    DEPENDS InstallPythonDependencies
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/${MAIN_SCRIPT}" "${OUTPUT_PROJECT_DIR}/"
+    COMMENT "Setting up output Python project for ${OUTPUT_PROJECT_NAME} with ${MAIN_SCRIPT} as entry point"
+    DEPENDS ${OUTPUT_PROJECT_NAME}_InstallPythonDependencies
 )
 
 # Add chmod +x to 'main.py' (Unix-like systems)
