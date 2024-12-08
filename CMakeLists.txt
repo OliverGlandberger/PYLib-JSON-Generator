@@ -1,17 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
-# Set custom output project name if provided
-if(DEFINED CUSTOM_OUTPUT_PROJECT_NAME AND NOT CUSTOM_OUTPUT_PROJECT_NAME STREQUAL "")
-    set(OUTPUT_PROJECT_NAME "${CUSTOM_OUTPUT_PROJECT_NAME}")
-else()
-    set(OUTPUT_PROJECT_NAME "GeneratedPythonProject")
+
+# Find pip executable
+find_program(PIP_EXECUTABLE pip)
+if(NOT PIP_EXECUTABLE)
+    message(FATAL_ERROR "pip not found. Please ensure pip is installed and accessible from your PATH.")
 endif()
-project(${OUTPUT_PROJECT_NAME} LANGUAGES NONE)
-set(PROJECT_NAMESPACE ${OUTPUT_PROJECT_NAME}_namespace)
-
-# Load optional configurations
-include("${CMAKE_SOURCE_DIR}/config.cmake" OPTIONAL)
-
-# Check for Python3 (OPTIONAL: Custom Python Interpreter)
+# Find Ninja executable
+find_program(NINJA_EXECUTABLE ninja)
+if(NOT NINJA_EXECUTABLE)
+    message(FATAL_ERROR "Ninja is not installed or not in the PATH. Please install Ninja to proceed.")
+endif()
+# Find Python3 (OPTIONAL: Custom Python Interpreter)
 if(DEFINED CUSTOM_PYTHON_EXECUTABLE AND NOT CUSTOM_PYTHON_EXECUTABLE STREQUAL "")
     set(Python3_EXECUTABLE "${CUSTOM_PYTHON_EXECUTABLE}")
 else()
@@ -21,18 +20,17 @@ else()
     endif()
 endif()
 
-# Find pip executable
-find_program(PIP_EXECUTABLE pip)
-if(NOT PIP_EXECUTABLE)
-    message(FATAL_ERROR "pip not found. Please ensure pip is installed and accessible from your PATH.")
-endif()
+# Load optional configurations
+include("${CMAKE_SOURCE_DIR}/config.cmake" OPTIONAL)
 
-# Define output directories and files
-set(OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${OUTPUT_PROJECT_NAME}")
-set(VSCODE_SETTINGS_DIR "${OUTPUT_PROJECT_DIR}/.vscode")
-set(VSCODE_SETTINGS_FILE "${VSCODE_SETTINGS_DIR}/settings.json")
-set(REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
-set(MAIN_SCRIPT "main.py")
+# Set custom output project name if provided
+if(DEFINED CUSTOM_OUTPUT_PROJECT_NAME AND NOT CUSTOM_OUTPUT_PROJECT_NAME STREQUAL "")
+    set(OUTPUT_PROJECT_NAME "${CUSTOM_OUTPUT_PROJECT_NAME}")
+else()
+    set(OUTPUT_PROJECT_NAME "GeneratedPythonProject")
+endif()
+project(${OUTPUT_PROJECT_NAME} LANGUAGES NONE)
+set(PROJECT_NAMESPACE ${OUTPUT_PROJECT_NAME}_namespace)
 
 # Install Python dependencies from requirements.txt
 if(EXISTS ${REQUIREMENTS_FILE})
@@ -43,6 +41,13 @@ if(EXISTS ${REQUIREMENTS_FILE})
 else()
     message(WARNING "requirements.txt not found for ${OUTPUT_PROJECT_NAME}. Skipping Python dependency installation.")
 endif()
+
+# Define output directories and files
+set(OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${OUTPUT_PROJECT_NAME}")
+set(VSCODE_SETTINGS_DIR "${OUTPUT_PROJECT_DIR}/.vscode")
+set(VSCODE_SETTINGS_FILE "${VSCODE_SETTINGS_DIR}/settings.json")
+set(REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
+set(MAIN_SCRIPT "main.py")
 
 # Create the output project directory and copy main.py
 add_custom_target(${PROJECT_NAMESPACE}_SetupPythonProject ALL
