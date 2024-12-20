@@ -37,6 +37,7 @@ if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
 endif()
 # Set the project's name
 project(${PROJ_NAME} LANGUAGES NONE)
+message(STATUS "${PROJ_NAME}: Configuring project")
 
 # Define namespace
 set(NAMESPACE ${PROJ_NAME})
