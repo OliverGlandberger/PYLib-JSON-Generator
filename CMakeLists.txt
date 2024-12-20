@@ -131,6 +131,8 @@ if (IS_ROOT_PROJECT)
         )
     endforeach()
     message(STATUS "Discovered test directories: ${${NAMESPACE}_MODULE_TEST_DIRS}")
+else()
+    message(STATUS "PYLib-JSONGenerator: Tests handled by the parent project.")
 endif()
 
 # Optionally initialize Git in the output project
@@ -150,4 +152,13 @@ add_custom_target(${NAMESPACE}_FinishSetup
     COMMAND ${CMAKE_COMMAND} -E echo "Output directory: ${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
     DEPENDS ${NAMESPACE}_SetupPythonProject
 )
+
+# Add a dummy target to ensure the project defines at least one target when included via FetchContent.
+# This satisfies FetchContent's requirements and prevents population issues in parent projects.
+if(NOT IS_ROOT_PROJECT)
+    add_custom_target(PYLib_JSONGenerator_dummy ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Dummy target for PYLib-JSONGenerator"
+    )
+endif()
+
 message(STATUS "${${NAMESPACE}_PROJ_NAME}: Finished configuring project")

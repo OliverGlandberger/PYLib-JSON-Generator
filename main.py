@@ -3,7 +3,7 @@ import sys
 from src.text_parser import src_func
 
 def main():
-    print("Hello from the main entry point!")
+    print("Hello from the main entry point of PYLib-JSONGenerator!")
     print(f"Arguments: {sys.argv[1:]}")
     print(src_func())
 
