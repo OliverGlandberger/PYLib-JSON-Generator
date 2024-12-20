@@ -9,18 +9,39 @@ else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
 endif()
 
-# Load optional configurations
-include("${CMAKE_SOURCE_DIR}/config.cmake" OPTIONAL)
+# Determine if this project is being fetched or built independently
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    # Top-level project
+    set(IS_ROOT_PROJECT TRUE)
+else()
+    # Included as a dependency
+    set(IS_ROOT_PROJECT FALSE)
+endif()
+
+# Load configurations based on context
+if(IS_ROOT_PROJECT)
+    set(CONFIG_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config.cmake")
+else()
+    set(CONFIG_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/config.cmake")
+endif()
+if(EXISTS "${CONFIG_CMAKE_PATH}")
+    include("${CONFIG_CMAKE_PATH}")
+else()
+    message(FATAL_ERROR "Configuration file not found at: ${CONFIG_CMAKE_PATH}")
+endif()
 
 # Ensure project name is defined
 if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
     message(FATAL_ERROR "No project name found. Make sure 'config.cmake' sets the 'PROJ_NAME' variable.")
 endif()
+# Debugging: Print the loaded project name
+message(STATUS "Loaded Project Name: ${PROJ_NAME}")
+# Set the project's name
+project(${PROJ_NAME} LANGUAGES NONE)
+
 # Define namespace
 set(NAMESPACE ${PROJ_NAME})
 set(${NAMESPACE}_PROJ_NAME "${PROJ_NAME}")
-# Set the project's name
-project(${PROJ_NAME} LANGUAGES NONE)
 
 # Define output directories and files with namespace
 set(${NAMESPACE}_OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${${NAMESPACE}_PROJ_NAME}")
