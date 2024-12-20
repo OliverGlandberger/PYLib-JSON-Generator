@@ -96,9 +96,9 @@ endforeach()
 # If this is the root project, find/add all tests
 if (IS_ROOT_PROJECT)
     # Recursively glob everything under "_deps", then filter out all "tests" dirs
-    file(GLOB_RECURSE ALL_POSSIBLE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps")
+    file(GLOB_RECURSE ALL_DIRS "${CMAKE_BINARY_DIR}/_deps")
     set(${NAMESPACE}_MODULE_TEST_DIRS "") 
-    foreach(DIR ${ALL_POSSIBLE_TEST_DIRS})
+    foreach(DIR ${ALL_DIRS})
         if(IS_DIRECTORY ${DIR} AND DIR MATCHES "(^|.*/|.\\\\)tests$")
             list(APPEND ${NAMESPACE}_MODULE_TEST_DIRS ${DIR})
         endif()
