@@ -1,8 +1,8 @@
 # Set a custom Python interpreter path (if needed)
 set(CUSTOM_PYTHON_EXECUTABLE "" CACHE STRING "Optional custom Python interpreter path")
 
-# Set custom output directory (default is GeneratedPythonProject)
-set(CUSTOM_OUTPUT_PROJECT_NAME "PYLib-JSON_Generator" CACHE STRING "Optional custom output project name")
+# Set the name of the project
+set(PROJ_NAME "PYLib-JSONGenerator" CACHE STRING "Optional custom output project name")
 
 # Enable automatic git initialization
 option(AUTO_GIT_INIT "Enables optional auto-initialization of local git repository" ON)

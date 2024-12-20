@@ -1,118 +1,99 @@
 cmake_minimum_required(VERSION 3.15)
 
-# Find pip executable
-find_program(PIP_EXECUTABLE pip)
-if(NOT PIP_EXECUTABLE)
-    message(FATAL_ERROR "pip not found. Please ensure pip is installed and accessible from your PATH.")
-endif()
-# Find Ninja executable
-find_program(NINJA_EXECUTABLE ninja)
-if(NOT NINJA_EXECUTABLE)
-    message(FATAL_ERROR "Ninja is not installed or not in the PATH. Please install Ninja to proceed.")
-endif()
-# Find Python3 (OPTIONAL: Custom Python Interpreter)
+# Find executables
+find_program(PIP_EXECUTABLE pip REQUIRED)
+find_program(NINJA_EXECUTABLE ninja REQUIRED)
 if(DEFINED CUSTOM_PYTHON_EXECUTABLE AND NOT CUSTOM_PYTHON_EXECUTABLE STREQUAL "")
     set(Python3_EXECUTABLE "${CUSTOM_PYTHON_EXECUTABLE}")
 else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    if(NOT Python3_FOUND)
-        message(FATAL_ERROR "Python3 not found. Please install Python3 on your system or specify a custom interpreter in config.cmake.")
-    endif()
 endif()
 
 # Load optional configurations
 include("${CMAKE_SOURCE_DIR}/config.cmake" OPTIONAL)
 
-# Set custom output project name if provided
-if(DEFINED CUSTOM_OUTPUT_PROJECT_NAME AND NOT CUSTOM_OUTPUT_PROJECT_NAME STREQUAL "")
-    set(OUTPUT_PROJECT_NAME "${CUSTOM_OUTPUT_PROJECT_NAME}")
-else()
-    set(OUTPUT_PROJECT_NAME "GeneratedPythonProject")
+# Ensure project name is defined
+if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
+    message(FATAL_ERROR "No project name found. Make sure 'config.cmake' sets the 'PROJ_NAME' variable.")
 endif()
-project(${OUTPUT_PROJECT_NAME} LANGUAGES NONE)
-set(PROJECT_NAMESPACE ${OUTPUT_PROJECT_NAME}_namespace)
+# Define namespace
+set(NAMESPACE ${PROJ_NAME})
+set(${NAMESPACE}_PROJ_NAME "${PROJ_NAME}")
+# Set the project's name
+project(${PROJ_NAME} LANGUAGES NONE)
 
-# Install Python dependencies from requirements.txt
-if(EXISTS ${REQUIREMENTS_FILE})
-    add_custom_target(${PROJECT_NAMESPACE}_InstallPythonDependencies ALL
-        COMMAND ${PIP_EXECUTABLE} install -r ${REQUIREMENTS_FILE}
-        COMMENT "Installing Python dependencies for ${OUTPUT_PROJECT_NAME} from requirements.txt"
+# Define output directories and files with namespace
+set(${NAMESPACE}_OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${${NAMESPACE}_PROJ_NAME}")
+set(${NAMESPACE}_VSCODE_SETTINGS_DIR "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/.vscode")
+set(${NAMESPACE}_VSCODE_SETTINGS_FILE "${${NAMESPACE}_VSCODE_SETTINGS_DIR}/settings.json")
+set(${NAMESPACE}_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
+set(${NAMESPACE}_MAIN_SCRIPT "main.py")
+
+# Install Python dependencies if requirements.txt exists
+if(EXISTS ${${NAMESPACE}_REQUIREMENTS_FILE})
+    add_custom_target(${NAMESPACE}_InstallPythonDependencies ALL
+        COMMAND ${PIP_EXECUTABLE} install --verbose -r ${${NAMESPACE}_REQUIREMENTS_FILE}
+        COMMENT "Installing Python dependencies for '${PROJ_NAME}' using 'requirements.txt'"
     )
 else()
-    message(WARNING "requirements.txt not found for ${OUTPUT_PROJECT_NAME}. Skipping Python dependency installation.")
+    message(WARNING "The 'requirements.txt' was not found at '${${NAMESPACE}_REQUIREMENTS_FILE}'. Python dependencies will not be installed.")
 endif()
 
-# Define output directories and files
-set(OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${OUTPUT_PROJECT_NAME}")
-set(VSCODE_SETTINGS_DIR "${OUTPUT_PROJECT_DIR}/.vscode")
-set(VSCODE_SETTINGS_FILE "${VSCODE_SETTINGS_DIR}/settings.json")
-set(REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
-set(MAIN_SCRIPT "main.py")
-
-# Create the output project directory and copy main.py
-add_custom_target(${PROJECT_NAMESPACE}_SetupPythonProject ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_PROJECT_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/${MAIN_SCRIPT}" "${OUTPUT_PROJECT_DIR}/"
-    COMMENT "Setting up output Python project for ${OUTPUT_PROJECT_NAME} with ${MAIN_SCRIPT} as entry point"
-    DEPENDS ${PROJECT_NAMESPACE}_InstallPythonDependencies
+# Setup project directories and copy 'main.py'
+add_custom_target(${NAMESPACE}_SetupPythonProject ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/${${NAMESPACE}_MAIN_SCRIPT}" "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/"
+    COMMENT "Setting up project '${${NAMESPACE}_PROJ_NAME}'."
+    DEPENDS ${NAMESPACE}_InstallPythonDependencies
 )
 
-# Add chmod +x to 'main.py' (Unix-like systems)
+# Add chmod +x for Unix-like systems
 if(UNIX)
-    add_custom_command(TARGET ${PROJECT_NAMESPACE}_SetupPythonProject POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E chmod +x "${OUTPUT_PROJECT_DIR}/${MAIN_SCRIPT}"
+    add_custom_command(TARGET ${NAMESPACE}_SetupPythonProject POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E chmod +x "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/${${NAMESPACE}_MAIN_SCRIPT}"
         COMMENT "Setting executable permission on main.py"
     )
 endif()
 
-# Copy project files
-file(GLOB SRC_FILES    "${CMAKE_SOURCE_DIR}/src/*.py")
-file(GLOB MODULE_FILES "${CMAKE_SOURCE_DIR}/modules/*.py")
-file(GLOB UTIL_FILES   "${CMAKE_SOURCE_DIR}/utilities/*.py")
-file(GLOB TEST_FILES   "${CMAKE_SOURCE_DIR}/tests/*.py")
-
-foreach(FILE ${SRC_FILES} ${MODULE_FILES} ${UTIL_FILES} ${TEST_FILES})
-    # Determine the destination folder
-    if(FILE IN_LIST SRC_FILES)
-        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/src")
-    elseif(FILE IN_LIST MODULE_FILES)
-        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/modules")
-    elseif(FILE IN_LIST UTIL_FILES)
-        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/utilities")
-    elseif(FILE IN_LIST TEST_FILES)
-        set(DEST_DIR "${OUTPUT_PROJECT_DIR}/tests")
-    else()
-        set(DEST_DIR "${OUTPUT_PROJECT_DIR}")
-    endif()
-    # Copy files to appropriate location(s)
-    add_custom_command(TARGET ${PROJECT_NAMESPACE}_SetupPythonProject POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy "${FILE}" "${DEST_DIR}/"
-        COMMENT "Copying ${FILE} to output directory ${DEST_DIR}"
-    )
+# Handle file copying
+set(SUB_DIRS src modules utilities tests)
+foreach(SUB_DIR ${SUB_DIRS})
+    file(GLOB FILES "${CMAKE_SOURCE_DIR}/${SUB_DIR}/*.py")
+    set(DEST_DIR "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/${SUB_DIR}")
+    foreach(FILE ${FILES})
+        add_custom_command(TARGET ${NAMESPACE}_SetupPythonProject POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy "${FILE}" "${DEST_DIR}/"
+        )
+    endforeach()
 endforeach()
 
-# Glob all test directories from the fetched modules
-file(GLOB_RECURSE MODULE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps/*/tests")
-# Convert the list to a comma-separated string
-string(REPLACE ";" "," MODULES_TEST_FOLDER_LIST "\"${MODULE_TEST_DIRS}\"")
-# Pass the list into settings.json
-set(MODULE_TEST_FOLDERS ${MODULES_TEST_FOLDER_LIST})
+# Handle test files & settings
+file(GLOB_RECURSE ${NAMESPACE}_MODULE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps/*/tests")  # Glob test directories from fetched modules
+list(JOIN ${${NAMESPACE}_MODULE_TEST_DIRS} "\",\"" MODULE_TEST_FOLDERS)  # Convert to comma-separated list
+# Convert list into JSON-compatible format
+if (NOT MODULE_TEST_FOLDERS)
+    set(MODULE_TEST_FOLDERS_JSON "[]")
+else()
+    set(MODULE_TEST_FOLDERS_JSON "[\"${MODULE_TEST_FOLDERS}\"]")
+endif()
+# Generate settings.json in the build directory
 configure_file(
-    ${CMAKE_SOURCE_DIR}/settings.json.in
-    ${CMAKE_BINARY_DIR}/settings.json @ONLY
+    "${CMAKE_SOURCE_DIR}/settings.json.in"
+    "${${NAMESPACE}_VSCODE_SETTINGS_FILE}" @ONLY
 )
 
-# Enable testing and run tests with the system Python interpreter
+# Add tests for this project
 enable_testing()
-# Add native tests
 add_test(NAME PythonTests
-    COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${OUTPUT_PROJECT_DIR}/tests"
-    WORKING_DIRECTORY "${OUTPUT_PROJECT_DIR}"
+    COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/tests" -p "test_*.py"
+    WORKING_DIRECTORY "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
 )
-# Add tests for imported modules explicitly
-foreach(TEST_DIR ${MODULE_TEST_DIRS})
-    add_test(NAME ModuleTests_${TEST_DIR}
+# Add tests for imported projects
+foreach(TEST_DIR ${${NAMESPACE}_MODULE_TEST_DIRS})
+    get_filename_component(TEST_NAME ${TEST_DIR} NAME_WE)
+    string(REPLACE "/" "_" TEST_NAME ${TEST_NAME})  # Sanitize for uniqueness
+    add_test(NAME ModuleTests_${TEST_NAME}
         COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${TEST_DIR}" -p "test_*.py"
         WORKING_DIRECTORY "${TEST_DIR}"
     )
@@ -120,28 +101,18 @@ endforeach()
 
 # Optionally initialize Git in the output project
 if(AUTO_GIT_INIT)
+    find_program(GIT_EXECUTABLE git REQUIRED)
     add_custom_command(
-        TARGET ${PROJECT_NAMESPACE}_SetupPythonProject POST_BUILD
-        COMMAND git init "${OUTPUT_PROJECT_DIR}"
-        WORKING_DIRECTORY "${OUTPUT_PROJECT_DIR}"
+        TARGET ${NAMESPACE}_SetupPythonProject POST_BUILD
+        COMMAND git init "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
+        WORKING_DIRECTORY "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
         COMMENT "Auto-initializing Git repository in output project"
     )
 endif()
 
-# Ensure .vscode directory exists
-add_custom_command(
-    TARGET ${PROJECT_NAMESPACE}_SetupPythonProject POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${VSCODE_SETTINGS_DIR}"
-)
-# Configure the settings.json file from the template
-configure_file(
-    "${CMAKE_SOURCE_DIR}/settings.json.in"
-    "${VSCODE_SETTINGS_FILE}"
-    COPYONLY
-)
-
-# Final message to indicate setup completion
-add_custom_target(${PROJECT_NAMESPACE}_FinishSetup
+# Final setup
+add_custom_target(${NAMESPACE}_FinishSetup
     COMMAND ${CMAKE_COMMAND} -E echo "Python project setup is complete!"
-    DEPENDS ${PROJECT_NAMESPACE}SetupPythonProject
+    COMMAND ${CMAKE_COMMAND} -E echo "Output directory: ${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
+    DEPENDS ${NAMESPACE}_SetupPythonProject
 )
