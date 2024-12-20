@@ -34,8 +34,6 @@ endif()
 if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
     message(FATAL_ERROR "No project name found. Make sure 'config.cmake' sets the 'PROJ_NAME' variable.")
 endif()
-# Debugging: Print the loaded project name
-message(STATUS "Loaded Project Name: ${PROJ_NAME}")
 # Set the project's name
 project(${PROJ_NAME} LANGUAGES NONE)
 
@@ -89,15 +87,22 @@ foreach(SUB_DIR ${SUB_DIRS})
     endforeach()
 endforeach()
 
-# Handle test files & settings
-file(GLOB_RECURSE ${NAMESPACE}_MODULE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps/*/tests")  # Glob test directories from fetched modules
-list(JOIN ${${NAMESPACE}_MODULE_TEST_DIRS} "\",\"" MODULE_TEST_FOLDERS)  # Convert to comma-separated list
-# Convert list into JSON-compatible format
-if (NOT MODULE_TEST_FOLDERS)
-    set(MODULE_TEST_FOLDERS_JSON "[]")
-else()
+# Recursively glob everything under "_deps", then filter out all "tests" dirs
+file(GLOB_RECURSE ALL_POSSIBLE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps")
+set(${NAMESPACE}_MODULE_TEST_DIRS "") 
+foreach(DIR ${ALL_POSSIBLE_TEST_DIRS})
+    if(IS_DIRECTORY ${DIR} AND DIR MATCHES "(^|.*/|.\\\\)tests$")
+        list(APPEND ${NAMESPACE}_MODULE_TEST_DIRS ${DIR})
+    endif()
+endforeach()
+# Convert list of test dirs to a comma-separated string
+if(NOT "${${NAMESPACE}_MODULE_TEST_DIRS}" STREQUAL "")
+    list(JOIN ${${NAMESPACE}_MODULE_TEST_DIRS} "\",\"" MODULE_TEST_FOLDERS)
     set(MODULE_TEST_FOLDERS_JSON "[\"${MODULE_TEST_FOLDERS}\"]")
+else()
+    set(MODULE_TEST_FOLDERS_JSON "[]")
 endif()
+
 # Generate settings.json in the build directory
 configure_file(
     "${CMAKE_SOURCE_DIR}/settings.json.in"
