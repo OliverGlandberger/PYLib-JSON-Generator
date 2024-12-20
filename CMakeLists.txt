@@ -36,6 +36,9 @@ if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
     message(FATAL_ERROR "No project name found. Make sure 'config.cmake' sets the 'PROJ_NAME' variable.")
 endif()
 # Set the project's name
+if (NOT IS_ROOT_PROJECT)
+    set(CMAKE_PROJECT_NAME ${PROJ_NAME})
+endif()
 project(${PROJ_NAME} LANGUAGES NONE)
 
 # Define namespace
