@@ -37,11 +37,12 @@ if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
 endif()
 # Set the project's name
 project(${PROJ_NAME} LANGUAGES NONE)
-message(STATUS "${PROJ_NAME}: Configuring project")
 
 # Define namespace
 set(NAMESPACE ${PROJ_NAME})
 set(${NAMESPACE}_PROJ_NAME "${PROJ_NAME}")
+
+message(STATUS "${${NAMESPACE}_PROJ_NAME}: Configuring project")
 
 # Define output directories and files with namespace
 set(${NAMESPACE}_OUTPUT_PROJECT_DIR "${CMAKE_BINARY_DIR}/${${NAMESPACE}_PROJ_NAME}")
@@ -146,3 +147,4 @@ add_custom_target(${NAMESPACE}_FinishSetup
     COMMAND ${CMAKE_COMMAND} -E echo "Output directory: ${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
     DEPENDS ${NAMESPACE}_SetupPythonProject
 )
+message(STATUS "${${NAMESPACE}_PROJ_NAME}: Finished configuring project")
