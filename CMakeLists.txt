@@ -25,6 +25,7 @@ else()
     set(CONFIG_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/config.cmake")
 endif()
 if(EXISTS "${CONFIG_CMAKE_PATH}")
+    message(STATUS "Loading config.cmake from: ${CONFIG_CMAKE_PATH}")
     include("${CONFIG_CMAKE_PATH}")
 else()
     message(FATAL_ERROR "Configuration file not found at: ${CONFIG_CMAKE_PATH}")
@@ -87,43 +88,45 @@ foreach(SUB_DIR ${SUB_DIRS})
     endforeach()
 endforeach()
 
-# Recursively glob everything under "_deps", then filter out all "tests" dirs
-file(GLOB_RECURSE ALL_POSSIBLE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps")
-set(${NAMESPACE}_MODULE_TEST_DIRS "") 
-foreach(DIR ${ALL_POSSIBLE_TEST_DIRS})
-    if(IS_DIRECTORY ${DIR} AND DIR MATCHES "(^|.*/|.\\\\)tests$")
-        list(APPEND ${NAMESPACE}_MODULE_TEST_DIRS ${DIR})
+# If this is the root project, find/add all tests
+if (IS_ROOT_PROJECT)
+    # Recursively glob everything under "_deps", then filter out all "tests" dirs
+    file(GLOB_RECURSE ALL_POSSIBLE_TEST_DIRS "${CMAKE_BINARY_DIR}/_deps")
+    set(${NAMESPACE}_MODULE_TEST_DIRS "") 
+    foreach(DIR ${ALL_POSSIBLE_TEST_DIRS})
+        if(IS_DIRECTORY ${DIR} AND DIR MATCHES "(^|.*/|.\\\\)tests$")
+            list(APPEND ${NAMESPACE}_MODULE_TEST_DIRS ${DIR})
+        endif()
+    endforeach()
+    # Convert list of test dirs to a comma-separated string
+    if(NOT "${${NAMESPACE}_MODULE_TEST_DIRS}" STREQUAL "")
+        list(JOIN ${${NAMESPACE}_MODULE_TEST_DIRS} "\",\"" MODULE_TEST_FOLDERS)
+        set(MODULE_TEST_FOLDERS_JSON "[\"${MODULE_TEST_FOLDERS}\"]")
+    else()
+        set(MODULE_TEST_FOLDERS_JSON "[]")
     endif()
-endforeach()
-# Convert list of test dirs to a comma-separated string
-if(NOT "${${NAMESPACE}_MODULE_TEST_DIRS}" STREQUAL "")
-    list(JOIN ${${NAMESPACE}_MODULE_TEST_DIRS} "\",\"" MODULE_TEST_FOLDERS)
-    set(MODULE_TEST_FOLDERS_JSON "[\"${MODULE_TEST_FOLDERS}\"]")
-else()
-    set(MODULE_TEST_FOLDERS_JSON "[]")
-endif()
-
-# Generate settings.json in the build directory
-configure_file(
-    "${CMAKE_SOURCE_DIR}/settings.json.in"
-    "${${NAMESPACE}_VSCODE_SETTINGS_FILE}" @ONLY
-)
-
-# Add tests for this project
-enable_testing()
-add_test(NAME PythonTests
-    COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/tests" -p "test_*.py"
-    WORKING_DIRECTORY "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
-)
-# Add tests for imported projects
-foreach(TEST_DIR ${${NAMESPACE}_MODULE_TEST_DIRS})
-    get_filename_component(TEST_NAME ${TEST_DIR} NAME_WE)
-    string(REPLACE "/" "_" TEST_NAME ${TEST_NAME})  # Sanitize for uniqueness
-    add_test(NAME ModuleTests_${TEST_NAME}
-        COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${TEST_DIR}" -p "test_*.py"
-        WORKING_DIRECTORY "${TEST_DIR}"
+    # Generate settings.json in the build directory
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/settings.json.in"
+        "${${NAMESPACE}_VSCODE_SETTINGS_FILE}" @ONLY
     )
-endforeach()
+
+    enable_testing()
+    add_test(NAME PythonTests
+        COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${${NAMESPACE}_OUTPUT_PROJECT_DIR}/tests" -p "test_*.py"
+        WORKING_DIRECTORY "${${NAMESPACE}_OUTPUT_PROJECT_DIR}"
+    )
+    # Add tests for imported projects
+    foreach(TEST_DIR ${${NAMESPACE}_MODULE_TEST_DIRS})
+        get_filename_component(TEST_NAME ${TEST_DIR} NAME_WE)
+        string(REPLACE "/" "_" TEST_NAME ${TEST_NAME})  # Sanitize for uniqueness
+        add_test(NAME ModuleTests_${TEST_NAME}
+            COMMAND "${Python3_EXECUTABLE}" -m unittest discover -s "${TEST_DIR}" -p "test_*.py"
+            WORKING_DIRECTORY "${TEST_DIR}"
+        )
+    endforeach()
+    message(STATUS "Discovered test directories: ${${NAMESPACE}_MODULE_TEST_DIRS}")
+endif()
 
 # Optionally initialize Git in the output project
 if(AUTO_GIT_INIT)
