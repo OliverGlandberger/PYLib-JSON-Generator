@@ -7,7 +7,6 @@ else()
     set(JSONGEN_PYTHON3_EXECUTABLE "${Python3_EXECUTABLE}")
 endif()
 
-# Keep main.py in subproject root
 set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "main.py")
 
 set(${JSONGEN_NAMESPACE}_OUTPUT_DIR "${CMAKE_BINARY_DIR}/${${JSONGEN_NAMESPACE}_PROJ_NAME}")
@@ -15,14 +14,13 @@ set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}
 set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_FILE "${${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR}/settings.json")
 set(${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
 
-# If standalone root, read local fetch_requirements.txt; else from subfolder
 if(JSONGEN_IS_ROOT_PROJECT)
     set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/fetch_requirements.txt")
 else()
     set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_CURRENT_LIST_DIR}/fetch_requirements.txt")
 endif()
 
-# Install deps
+# Install Python deps
 if(EXISTS "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}")
     add_custom_target(${JSONGEN_NAMESPACE}_InstallPythonDeps ALL
         COMMAND "${JSONGEN_PYTHON3_EXECUTABLE}" -m pip install --verbose
@@ -30,15 +28,14 @@ if(EXISTS "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}")
         COMMENT "Installing Python dependencies for '${PROJ_NAME}'"
     )
 else()
-    message(WARNING "No requirements.txt at '${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}'.")
+    message(WARNING "No requirements.txt found.")
 endif()
 
-# If not root, skip top-level logic
+# If not root, skip
 if(NOT JSONGEN_IS_ROOT_PROJECT)
     return()
 endif()
 
-# If root, define SetupPythonProject
 add_custom_target(${JSONGEN_NAMESPACE}_SetupPythonProject ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -56,8 +53,8 @@ if(UNIX)
     )
 endif()
 
-# Copy other .py from subdirectories (no main.py duplication, since main.py is in root)
-set(JSONGEN_SUB_DIRS src modules tests)
+# Copy normal subproject .py from src/modules if desired
+set(JSONGEN_SUB_DIRS src modules)
 foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
     file(GLOB JSONGEN_PY_FILES "${CMAKE_SOURCE_DIR}/${SUB_DIR}/*.py")
     set(JSONGEN_DEST_DIR "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/${SUB_DIR}")
@@ -67,6 +64,19 @@ foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FILE_PATH}" "${JSONGEN_DEST_DIR}/"
         )
     endforeach()
+endforeach()
+
+# NEW: Copy the subproject’s tests into <build>/PYLib-JSONGenerator/tests
+file(GLOB JSONGEN_TEST_FILES "${CMAKE_SOURCE_DIR}/tests/*.py")
+foreach(TEST_FILE ${JSONGEN_TEST_FILES})
+    add_custom_command(
+        TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${TEST_FILE}"
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests/"
+    )
 endforeach()
 
 if(AUTO_GIT_INIT)

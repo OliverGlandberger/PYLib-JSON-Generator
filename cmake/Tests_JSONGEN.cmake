@@ -8,7 +8,6 @@ if(JSONGEN_IS_ROOT_PROJECT)
                 get_filename_component(DIR_NAME "${ITEM}" NAME)
                 if(DIR_NAME STREQUAL "tests")
                     list(APPEND JSONGEN_TEST_DIRECTORIES "${ITEM}")
-                    set(JSONGEN_TEST_DIRECTORIES "${JSONGEN_TEST_DIRECTORIES}" CACHE INTERNAL "")
                 else()
                     jsongen_collect_tests("${ITEM}")
                 endif()
@@ -16,10 +15,10 @@ if(JSONGEN_IS_ROOT_PROJECT)
         endforeach()
     endfunction()
 
-    # 1) Collect local tests in JSON-Generator
-    jsongen_collect_tests("${CMAKE_SOURCE_DIR}/tests")
+    # 1) Local tests from the subproject’s build folder
+    jsongen_collect_tests("${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests")
 
-    # 2) Collect any fetched subprojects in "_deps"
+    # 2) Tests from fetched subprojects in _deps
     jsongen_collect_tests("${CMAKE_BINARY_DIR}/_deps")
 
     message(STATUS "Raw JSONGEN_TEST_DIRECTORIES: ${JSONGEN_TEST_DIRECTORIES}")
@@ -40,7 +39,7 @@ if(JSONGEN_IS_ROOT_PROJECT)
         )
     endforeach()
 
-    # Build the python.testing.unittestArgs array
+    # Build python.testing.unittestArgs array
     set(JSONGEN_TEST_ARGS_LIST "")
     list(APPEND JSONGEN_TEST_ARGS_LIST "\"-v\"")
 
