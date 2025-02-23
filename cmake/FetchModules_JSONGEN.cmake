@@ -40,23 +40,32 @@ function(jsongen_fetch_requirements_file file_path)
     file(STRINGS "${file_path}" LINES)
 
     foreach(LINE ${LINES})
+        # Strip leading/trailing whitespace from the entire line
         string(STRIP "${LINE}" LINE)
         if(LINE MATCHES "^(#|$)")
             continue()
         endif()
 
-        string(REPLACE "|" ";" TOKENS "${LINE}")
-        list(LENGTH TOKENS NUM_TOKENS)
+        # Split by '|'
+        string(REPLACE "|" ";" RAW_TOKENS "${LINE}")
+        list(LENGTH RAW_TOKENS NUM_TOKENS)
         if(NOT NUM_TOKENS EQUAL 4)
-            message(FATAL_ERROR "Invalid line:\n  ${LINE}")
+            message(FATAL_ERROR "Invalid line:\n  '${LINE}'\nExpected 4 parts separated by '|'.")
         endif()
+
+        # Strip each token
+        set(TOKENS "")
+        foreach(TOKEN ${RAW_TOKENS})
+            string(STRIP "${TOKEN}" TOKEN)
+            list(APPEND TOKENS "${TOKEN}")
+        endforeach()
 
         list(GET TOKENS 0 REPO_NAME)
         list(GET TOKENS 1 REPO_NAMESPACE)
         list(GET TOKENS 2 GIT_REPO)
         list(GET TOKENS 3 GIT_TAG)
 
-        # Skip self-fetch if referencing "PYLib-JSONGenerator" or "pylib-jsongenerator"
+        # Optional: Skip self-fetch if referencing the same project
         if("${REPO_NAME}" STREQUAL "PYLib-JSONGenerator"
            OR "${REPO_NAME}" STREQUAL "pylib-jsongenerator")
             message(STATUS "Skipping self-fetch for ${REPO_NAME}")
