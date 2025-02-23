@@ -1,6 +1,13 @@
 if(JSONGEN_IS_ROOT_PROJECT)
     unset(JSONGEN_TEST_DIRECTORIES)
 
+    # Copy JSONGen's local "tests" folder into build/PYLib-JSONGenerator/tests
+    if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
+        file(COPY "${CMAKE_SOURCE_DIR}/tests"
+             DESTINATION "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
+        )
+    endif()
+
     function(jsongen_collect_tests BASE_DIR)
         file(GLOB ITEMS "${BASE_DIR}/*")
         foreach(ITEM ${ITEMS})
@@ -15,10 +22,10 @@ if(JSONGEN_IS_ROOT_PROJECT)
         endforeach()
     endfunction()
 
-    # 1) Local tests from the subproject’s build folder
+    # 1) Collect subproject's own tests
     jsongen_collect_tests("${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests")
 
-    # 2) Tests from fetched subprojects in _deps
+    # 2) Collect fetched modules in _deps
     jsongen_collect_tests("${CMAKE_BINARY_DIR}/_deps")
 
     message(STATUS "Raw JSONGEN_TEST_DIRECTORIES: ${JSONGEN_TEST_DIRECTORIES}")

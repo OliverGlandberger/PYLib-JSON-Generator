@@ -66,19 +66,6 @@ foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
     endforeach()
 endforeach()
 
-# NEW: Copy the subproject’s tests into <build>/PYLib-JSONGenerator/tests
-file(GLOB JSONGEN_TEST_FILES "${CMAKE_SOURCE_DIR}/tests/*.py")
-foreach(TEST_FILE ${JSONGEN_TEST_FILES})
-    add_custom_command(
-        TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${TEST_FILE}"
-                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests/"
-    )
-endforeach()
-
 if(AUTO_GIT_INIT)
     find_program(JSONGEN_GIT_EXECUTABLE git REQUIRED)
     add_custom_command(
