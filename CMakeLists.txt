@@ -38,8 +38,10 @@ include(FetchModules_JSONGEN)
 include(Tests_JSONGEN)
 
 # Final target
-add_custom_target(${JSONGEN_NAMESPACE}_FinishSetup
-    COMMAND ${CMAKE_COMMAND} -E echo "Python project setup is complete!"
-    COMMAND ${CMAKE_COMMAND} -E echo "Output directory: ${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
-    DEPENDS ${JSONGEN_NAMESPACE}_SetupPythonProject
-)
+if(JSONGEN_IS_ROOT_PROJECT)
+    add_custom_target(${JSONGEN_NAMESPACE}_FinishSetup
+        COMMAND ${CMAKE_COMMAND} -E echo "Python project setup is complete!"
+        COMMAND ${CMAKE_COMMAND} -E echo "Output directory: ${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
+        DEPENDS ${JSONGEN_NAMESPACE}_SetupPythonProject
+    )
+endif()
