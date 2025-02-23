@@ -21,10 +21,6 @@ function(jsongen_fetch_and_configure_module repo_name namespace git_repo git_tag
     endif()
 endfunction()
 
-# ------------------------------------------------------------------
-# Function to parse "fetch_requirements.txt" if it exists.
-# Format: "RepoName|Namespace|GitURL|GitTag" per line
-# ------------------------------------------------------------------
 function(jsongen_fetch_requirements_file file_path)
     if(NOT EXISTS "${file_path}")
         message(STATUS "No fetch_requirements.txt found at: ${file_path}")
@@ -40,14 +36,21 @@ function(jsongen_fetch_requirements_file file_path)
             continue()
         endif()
 
-        string(REPLACE "|" ";" TOKENS "${LINE}")
-        list(LENGTH TOKENS NUM_TOKENS)
+        string(REPLACE "|" ";" RAW_TOKENS "${LINE}")
+        list(LENGTH RAW_TOKENS NUM_TOKENS)
         if(NOT NUM_TOKENS EQUAL 4)
             message(FATAL_ERROR
                 "Invalid line in fetch_requirements.txt:\n  ${LINE}\n"
                 "Expected 4 parts separated by '|'."
             )
         endif()
+
+        # Trim extra spaces
+        set(TOKENS "")
+        foreach(TOKEN ${RAW_TOKENS})
+            string(STRIP "${TOKEN}" TOKEN)
+            list(APPEND TOKENS "${TOKEN}")
+        endforeach()
 
         list(GET TOKENS 0 REPO_NAME)
         list(GET TOKENS 1 REPO_NAMESPACE)
@@ -57,12 +60,12 @@ function(jsongen_fetch_requirements_file file_path)
         set(OUTPUT_DIR_VAR "${REPO_NAME}_OUTPUT_DIR")
 
         jsongen_fetch_and_configure_module(
-            "${REPO_NAME}" "${REPO_NAMESPACE}" "${GIT_REPO}" "${GIT_TAG}" "${OUTPUT_DIR_VAR}"
+            "${REPO_NAME}" "${REPO_NAMESPACE}"
+            "${GIT_REPO}"  "${GIT_TAG}"
+            "${OUTPUT_DIR_VAR}"
         )
     endforeach()
 endfunction()
 
-# ------------------------------------------------------------------
-# If we want to always parse the local fetch_requirements.txt
-# ------------------------------------------------------------------
+# Trigger JSONGen’s local fetch_requirements.txt
 jsongen_fetch_requirements_file("${${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE}")
