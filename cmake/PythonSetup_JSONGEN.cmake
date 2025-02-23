@@ -32,6 +32,11 @@ else()
     )
 endif()
 
+# If this is not the root, skip the top-level logic
+if(NOT JSONGEN_IS_ROOT_PROJECT)
+    return()
+endif()
+
 # Setup main script
 add_custom_target(${JSONGEN_NAMESPACE}_SetupPythonProject ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
