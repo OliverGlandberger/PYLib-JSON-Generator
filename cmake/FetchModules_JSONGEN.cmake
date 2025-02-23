@@ -12,12 +12,12 @@ function(jsongen_fetch_and_configure_module repo_name namespace git_repo git_tag
     FetchContent_MakeAvailable(${repo_name})
     FetchContent_GetProperties(${repo_name})
 
-    if(NOT ${repo_name}_POPULATED)
-        message(FATAL_ERROR "Failed to populate ${repo_name}")
-    else()
+    if(${repo_name}_POPULATED)
         message(STATUS "Successfully populated ${repo_name}")
         message(STATUS "Source Dir: ${${repo_name}_SOURCE_DIR}")
         message(STATUS "Binary Dir: ${${repo_name}_BINARY_DIR}")
+    else()
+        message(FATAL_ERROR "Failed to populate ${repo_name}")
     endif()
 endfunction()
 
