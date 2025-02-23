@@ -8,42 +8,40 @@ else()
     set(JSONGEN_PYTHON3_EXECUTABLE "${Python3_EXECUTABLE}")
 endif()
 
+# Key dirs
 set(${JSONGEN_NAMESPACE}_OUTPUT_DIR "${CMAKE_BINARY_DIR}/${${JSONGEN_NAMESPACE}_PROJ_NAME}")
 set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/.vscode")
 set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_FILE "${${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR}/settings.json")
-
-# Normal Python package requirements
 set(${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
-# Custom fetch requirements
+
+# If built as root, read local fetch_requirements.txt
+# If fetched, read from CMAKE_CURRENT_LIST_DIR (the subproject's folder)
 if(JSONGEN_IS_ROOT_PROJECT)
-    # If built standalone, use our top-level source dir
     set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/fetch_requirements.txt")
 else()
-    # If fetched, read *this* subproject's local fetch_requirements.txt
     set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_CURRENT_LIST_DIR}/fetch_requirements.txt")
 endif()
 
 set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "main.py")
 
-# Install Python deps if present
+# Install python deps
 if(EXISTS "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}")
     add_custom_target(${JSONGEN_NAMESPACE}_InstallPythonDeps ALL
         COMMAND ${JSONGEN_PIP_EXECUTABLE} install --verbose -r "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}"
         COMMENT "Installing Python dependencies for '${PROJ_NAME}'"
     )
 else()
-    message(WARNING
-        "requirements.txt not found at '${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}'. "
-        "No Python dependencies installed."
-    )
+    message(WARNING "requirements.txt not found at '${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}'.")
 endif()
 
-# If this is not the root, skip the top-level logic
+# If not the root project, skip top-level logic (avoid collisions)
 if(NOT JSONGEN_IS_ROOT_PROJECT)
     return()
 endif()
 
-# Setup main script
+# ------------------------------------------------------------------
+# If we are root, define the SetupPythonProject target
+# ------------------------------------------------------------------
 add_custom_target(${JSONGEN_NAMESPACE}_SetupPythonProject ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -57,11 +55,11 @@ if(UNIX)
     add_custom_command(TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E chmod +x
                 "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/${${JSONGEN_NAMESPACE}_MAIN_SCRIPT}"
-        COMMENT "Making main.py executable on Unix-like systems"
+        COMMENT "Making main.py executable on Unix"
     )
 endif()
 
-# Copy .py files from subdirectories
+# Copy .py files
 set(JSONGEN_SUB_DIRS src modules utilities tests)
 foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
     file(GLOB JSONGEN_PY_FILES "${CMAKE_SOURCE_DIR}/${SUB_DIR}/*.py")
@@ -74,13 +72,13 @@ foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
     endforeach()
 endforeach()
 
-# Optionally init Git
+# Optionally init git if root
 if(AUTO_GIT_INIT)
     find_program(JSONGEN_GIT_EXECUTABLE git REQUIRED)
     add_custom_command(
         TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
         COMMAND ${JSONGEN_GIT_EXECUTABLE} init "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
         WORKING_DIRECTORY "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
-        COMMENT "Auto-initializing Git repository in output project"
+        COMMENT "Auto-initializing Git repository"
     )
 endif()

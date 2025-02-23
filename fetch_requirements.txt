@@ -1,0 +1,2 @@
+# This file lists subprojects to fetch. One example line:
+# RepoName|Namespace|GitURL|GitTag

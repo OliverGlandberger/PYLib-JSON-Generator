@@ -8,8 +8,7 @@ if(JSONGEN_IS_ROOT_PROJECT)
                 get_filename_component(DIR_NAME "${ITEM}" NAME)
                 if(DIR_NAME STREQUAL "tests")
                     list(APPEND JSONGEN_TEST_DIRECTORIES "${ITEM}")
-                    set(JSONGEN_TEST_DIRECTORIES "${JSONGEN_TEST_DIRECTORIES}"
-                        CACHE INTERNAL "Collected test directories (JSONGen)")
+                    set(JSONGEN_TEST_DIRECTORIES "${JSONGEN_TEST_DIRECTORIES}" CACHE INTERNAL "")
                 else()
                     jsongen_collect_tests("${ITEM}")
                 endif()
@@ -17,7 +16,6 @@ if(JSONGEN_IS_ROOT_PROJECT)
         endforeach()
     endfunction()
 
-    # Collect tests from _deps or anywhere else you'd like
     jsongen_collect_tests("${CMAKE_BINARY_DIR}/_deps")
 
     message(STATUS "Raw JSONGEN_TEST_DIRECTORIES: ${JSONGEN_TEST_DIRECTORIES}")
@@ -29,7 +27,7 @@ if(JSONGEN_IS_ROOT_PROJECT)
     foreach(TEST_DIR ${JSONGEN_TEST_DIRECTORIES})
         get_filename_component(PARENT_DIR "${TEST_DIR}" DIRECTORY)
         get_filename_component(TEST_NAME "${PARENT_DIR}" NAME)
-        message(STATUS "Registering JSONGen test dir: ${TEST_DIR} (name: ${TEST_NAME})")
+        message(STATUS "Registering JSONGen test dir: ${TEST_DIR} => ${TEST_NAME}")
 
         add_test(NAME JSONGenTests_${TEST_NAME}
             COMMAND "${JSONGEN_PYTHON3_EXECUTABLE}" -m unittest discover
@@ -38,7 +36,6 @@ if(JSONGEN_IS_ROOT_PROJECT)
         )
     endforeach()
 
-    # Generate VSCode settings referencing discovered tests
     if(JSONGEN_TEST_DIRECTORIES AND NOT JSONGEN_TEST_DIRECTORIES STREQUAL "")
         set(JSONGEN_TEST_DIRS_JSON "")
         foreach(TEST_DIR ${JSONGEN_TEST_DIRECTORIES})
