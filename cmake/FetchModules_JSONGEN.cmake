@@ -15,6 +15,16 @@ function(jsongen_fetch_and_configure_module repo_name namespace git_repo git_tag
         message(STATUS "Successfully populated ${repo_name}")
         message(STATUS "Source Dir: ${${repo_name}_SOURCE_DIR}")
         message(STATUS "Binary Dir: ${${repo_name}_BINARY_DIR}")
+
+        # If you want to copy subprojects for JSONGen as well, define a
+        # "copy_fetched_python_project" function similarly, but name it differently
+        # (e.g. jsongen_copy_fetched_python_project) and call it here
+        # if(JSONGEN_IS_ROOT_PROJECT)
+        #   jsongen_copy_fetched_python_project(
+        #       ${repo_name}
+        #       "${${repo_name}_SOURCE_DIR}"
+        #   )
+        # endif()
     else()
         message(FATAL_ERROR "Failed to populate ${repo_name}")
     endif()
@@ -35,26 +45,20 @@ function(jsongen_fetch_requirements_file file_path)
             continue()
         endif()
 
-        string(REPLACE "|" ";" RAW_TOKENS "${LINE}")
-        list(LENGTH RAW_TOKENS NUM_TOKENS)
+        string(REPLACE "|" ";" TOKENS "${LINE}")
+        list(LENGTH TOKENS NUM_TOKENS)
         if(NOT NUM_TOKENS EQUAL 4)
-            message(FATAL_ERROR "Invalid line:\n  ${LINE}\nExpected 4 parts separated by '|'.")
+            message(FATAL_ERROR "Invalid line:\n  ${LINE}")
         endif()
-
-        # Trim extra spaces
-        set(TOKENS "")
-        foreach(TOKEN ${RAW_TOKENS})
-            string(STRIP "${TOKEN}" TOKEN)
-            list(APPEND TOKENS "${TOKEN}")
-        endforeach()
 
         list(GET TOKENS 0 REPO_NAME)
         list(GET TOKENS 1 REPO_NAMESPACE)
         list(GET TOKENS 2 GIT_REPO)
         list(GET TOKENS 3 GIT_TAG)
 
-        # Avoid self-fetch if it references "PYLib-JSONGenerator"
-        if("${REPO_NAME}" STREQUAL "PYLib-JSONGenerator")
+        # Skip self-fetch if referencing "PYLib-JSONGenerator" or "pylib-jsongenerator"
+        if("${REPO_NAME}" STREQUAL "PYLib-JSONGenerator"
+           OR "${REPO_NAME}" STREQUAL "pylib-jsongenerator")
             message(STATUS "Skipping self-fetch for ${REPO_NAME}")
             continue()
         endif()
@@ -68,7 +72,7 @@ function(jsongen_fetch_requirements_file file_path)
     endforeach()
 endfunction()
 
-# Only parse fetch_requirements if we are root in JSONGen
+# If JSONGen is built standalone as root, parse its own fetch_requirements.txt
 if(JSONGEN_IS_ROOT_PROJECT)
     jsongen_fetch_requirements_file("${${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE}")
 endif()
