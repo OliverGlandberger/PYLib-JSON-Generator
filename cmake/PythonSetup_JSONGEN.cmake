@@ -15,7 +15,13 @@ set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_FILE "${${JSONGEN_NAMESPACE}_VSCODE_SET
 # Normal Python package requirements
 set(${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/requirements.txt")
 # Custom fetch requirements
-set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/fetch_requirements.txt")
+if(JSONGEN_IS_ROOT_PROJECT)
+    # If built standalone, use our top-level source dir
+    set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_SOURCE_DIR}/fetch_requirements.txt")
+else()
+    # If fetched, read *this* subproject's local fetch_requirements.txt
+    set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_CURRENT_LIST_DIR}/fetch_requirements.txt")
+endif()
 
 set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "main.py")
 

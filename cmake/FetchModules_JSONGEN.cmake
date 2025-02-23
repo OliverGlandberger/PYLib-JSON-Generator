@@ -59,11 +59,14 @@ function(jsongen_fetch_requirements_file file_path)
 
         set(OUTPUT_DIR_VAR "${REPO_NAME}_OUTPUT_DIR")
 
-        jsongen_fetch_and_configure_module(
-            "${REPO_NAME}" "${REPO_NAMESPACE}"
-            "${GIT_REPO}"  "${GIT_TAG}"
-            "${OUTPUT_DIR_VAR}"
-        )
+        if("${REPO_NAME}" STREQUAL "PYLib-JSONGenerator")
+        message(STATUS "Skipping self-fetch for ${REPO_NAME} inside PYLib-JSONGenerator.")
+        continue()
+    endif()
+    
+    jsongen_fetch_and_configure_module(
+        "${REPO_NAME}" "${REPO_NAMESPACE}" "${GIT_REPO}" "${GIT_TAG}" "${OUTPUT_DIR_VAR}"
+    )
     endforeach()
 endfunction()
 
