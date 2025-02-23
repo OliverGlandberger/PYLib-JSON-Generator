@@ -20,7 +20,7 @@ else()
     set(${JSONGEN_NAMESPACE}_FETCH_REQUIREMENTS_FILE "${CMAKE_CURRENT_LIST_DIR}/fetch_requirements.txt")
 endif()
 
-set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "main.py")
+set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "src/main.py")
 
 # Install deps with 'python -m pip'
 if(EXISTS "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}")
