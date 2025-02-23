@@ -1,11 +1,7 @@
 {
     "python.testing.unittestEnabled": true,
     "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests",
-        "-p",
-        "test_*.py"
+        @JSONGEN_UNITTEST_ARGS@
     ],
     "python.testing.pytestEnabled": false
 }

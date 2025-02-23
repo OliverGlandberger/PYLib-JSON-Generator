@@ -36,17 +36,19 @@ if(JSONGEN_IS_ROOT_PROJECT)
         )
     endforeach()
 
-    # VSCode test references
-    if(JSONGEN_TEST_DIRECTORIES AND NOT JSONGEN_TEST_DIRECTORIES STREQUAL "")
-        set(JSONGEN_TEST_DIRS_JSON "")
-        foreach(TEST_DIR ${JSONGEN_TEST_DIRECTORIES})
-            list(APPEND JSONGEN_TEST_DIRS_JSON "\"${TEST_DIR}\"")
-        endforeach()
-        string(JOIN "," JSONGEN_TEST_DIRS_JSON ${JSONGEN_TEST_DIRS_JSON})
-        set(JSONGEN_MODULE_TEST_FOLDERS_JSON "[${JSONGEN_TEST_DIRS_JSON}]")
-    else()
-        set(JSONGEN_MODULE_TEST_FOLDERS_JSON "[]")
-    endif()
+    # Build a JSON array for python.testing.unittestArgs
+    set(JSONGEN_TEST_ARGS_LIST "")
+    list(APPEND JSONGEN_TEST_ARGS_LIST "\"-v\"")
+
+    foreach(TEST_DIR ${JSONGEN_TEST_DIRECTORIES})
+        file(TO_CMAKE_PATH "${TEST_DIR}" TEST_DIR_CLEAN)
+        list(APPEND JSONGEN_TEST_ARGS_LIST "\"-s\"")
+        list(APPEND JSONGEN_TEST_ARGS_LIST "\"${TEST_DIR_CLEAN}\"")
+    endforeach()
+
+    list(APPEND JSONGEN_TEST_ARGS_LIST "\"-p\"")
+    list(APPEND JSONGEN_TEST_ARGS_LIST "\"test_*.py\"")
+    string(JOIN "," JSONGEN_UNITTEST_ARGS ${JSONGEN_TEST_ARGS_LIST})
 
     configure_file(
         "${CMAKE_SOURCE_DIR}/settings.json.in"
