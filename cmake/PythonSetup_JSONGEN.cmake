@@ -8,7 +8,6 @@ else()
 endif()
 
 set(${JSONGEN_NAMESPACE}_MAIN_SCRIPT "main.py")
-
 set(${JSONGEN_NAMESPACE}_OUTPUT_DIR "${CMAKE_BINARY_DIR}/${${JSONGEN_NAMESPACE}_PROJ_NAME}")
 set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/.vscode")
 set(${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_FILE "${${JSONGEN_NAMESPACE}_VSCODE_SETTINGS_DIR}/settings.json")
@@ -28,7 +27,7 @@ if(EXISTS "${${JSONGEN_NAMESPACE}_REQUIREMENTS_FILE}")
         COMMENT "Installing Python dependencies for '${PROJ_NAME}'"
     )
 else()
-    message(WARNING "No requirements.txt found.")
+    message(WARNING "No requirements.txt found for JSONGen.")
 endif()
 
 # If not root, skip
@@ -53,19 +52,33 @@ if(UNIX)
     )
 endif()
 
-# Copy normal subproject .py from src/modules if desired
-set(JSONGEN_SUB_DIRS src modules)
-foreach(SUB_DIR ${JSONGEN_SUB_DIRS})
-    file(GLOB JSONGEN_PY_FILES "${CMAKE_SOURCE_DIR}/${SUB_DIR}/*.py")
-    set(JSONGEN_DEST_DIR "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/${SUB_DIR}")
-    foreach(FILE_PATH ${JSONGEN_PY_FILES})
-        add_custom_command(TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${JSONGEN_DEST_DIR}"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${FILE_PATH}" "${JSONGEN_DEST_DIR}/"
-        )
-    endforeach()
+# Copy subproject's src/*.py
+file(GLOB JSONGEN_SRC_FILES "${CMAKE_SOURCE_DIR}/src/*.py")
+foreach(FILE_PATH ${JSONGEN_SRC_FILES})
+    add_custom_command(TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/src"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${FILE_PATH}"
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/src/"
+    )
 endforeach()
 
+# Copy subproject's modules/*.py
+file(GLOB JSONGEN_MODULE_FILES "${CMAKE_SOURCE_DIR}/modules/*.py")
+foreach(FILE_PATH ${JSONGEN_MODULE_FILES})
+    add_custom_command(TARGET ${JSONGEN_NAMESPACE}_SetupPythonProject POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/modules"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${FILE_PATH}"
+                "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/modules/"
+    )
+endforeach()
+
+# We omit copying "tests" here since we do that at configure time in Tests_JSONGEN.cmake.
+
+# Optionally init Git
 if(AUTO_GIT_INIT)
     find_program(JSONGEN_GIT_EXECUTABLE git REQUIRED)
     add_custom_command(

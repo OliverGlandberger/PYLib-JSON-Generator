@@ -1,29 +1,40 @@
 if(JSONGEN_IS_ROOT_PROJECT)
     unset(JSONGEN_TEST_DIRECTORIES)
 
-    # Copy JSONGen's local "tests" folder into build/PYLib-JSONGenerator/tests
+    # Ensure the final output folder exists at configure time
+    file(MAKE_DIRECTORY "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}")
+
+    # Copy subproject's tests folder at configure time
     if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
         file(COPY "${CMAKE_SOURCE_DIR}/tests"
              DESTINATION "${${JSONGEN_NAMESPACE}_OUTPUT_DIR}"
         )
+        message(STATUS "Copied JSONGen tests to: ${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests")
     endif()
 
     function(jsongen_collect_tests BASE_DIR)
+        message(STATUS "jsongen_collect_tests scanning: ${BASE_DIR}")
         file(GLOB ITEMS "${BASE_DIR}/*")
         foreach(ITEM ${ITEMS})
             if(IS_DIRECTORY "${ITEM}")
+                message(STATUS "  Found directory: ${ITEM}")
                 get_filename_component(DIR_NAME "${ITEM}" NAME)
                 if(DIR_NAME STREQUAL "tests")
+                    message(STATUS "  --> MATCH: adding to JSONGEN_TEST_DIRECTORIES: ${ITEM}")
                     list(APPEND JSONGEN_TEST_DIRECTORIES "${ITEM}")
+                    set(JSONGEN_TEST_DIRECTORIES "${JSONGEN_TEST_DIRECTORIES}" PARENT_SCOPE)
                 else()
                     jsongen_collect_tests("${ITEM}")
+                    set(JSONGEN_TEST_DIRECTORIES "${JSONGEN_TEST_DIRECTORIES}" PARENT_SCOPE)
                 endif()
+            else()
+                message(STATUS "  Found file (ignored): ${ITEM}")
             endif()
         endforeach()
     endfunction()
 
-    # 1) Collect subproject's own tests
-    jsongen_collect_tests("${${JSONGEN_NAMESPACE}_OUTPUT_DIR}/tests")
+    # 1) Collect subproject’s tests from the newly-copied folder
+    jsongen_collect_tests("${${JSONGEN_NAMESPACE}_OUTPUT_DIR}")
 
     # 2) Collect fetched modules in _deps
     jsongen_collect_tests("${CMAKE_BINARY_DIR}/_deps")
@@ -46,7 +57,7 @@ if(JSONGEN_IS_ROOT_PROJECT)
         )
     endforeach()
 
-    # Build python.testing.unittestArgs array
+    # Build python.testing.unittestArgs
     set(JSONGEN_TEST_ARGS_LIST "")
     list(APPEND JSONGEN_TEST_ARGS_LIST "\"-v\"")
 
