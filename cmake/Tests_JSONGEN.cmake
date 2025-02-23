@@ -36,7 +36,7 @@ if(JSONGEN_IS_ROOT_PROJECT)
         )
     endforeach()
 
-    # Optionally generate a VSCode settings.json referencing discovered tests
+    # VSCode test references
     if(JSONGEN_TEST_DIRECTORIES AND NOT JSONGEN_TEST_DIRECTORIES STREQUAL "")
         set(JSONGEN_TEST_DIRS_JSON "")
         foreach(TEST_DIR ${JSONGEN_TEST_DIRECTORIES})

@@ -19,7 +19,7 @@ endif()
 include("${JSONGEN_CONFIG_CMAKE_PATH}")
 
 if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
-    message(FATAL_ERROR "No PROJ_NAME set in config.cmake for PYLib-JSONGenerator.")
+    message(FATAL_ERROR "No project name set in config.cmake for PYLib-JSONGenerator.")
 endif()
 
 set(JSONGEN_NAMESPACE "${PROJ_NAME}")
