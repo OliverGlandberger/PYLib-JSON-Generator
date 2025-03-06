@@ -18,14 +18,19 @@ endif()
 
 include("${JSONGEN_CONFIG_CMAKE_PATH}")
 
+# Check if a project name override has been passed by the parent project
+if(DEFINED PROJECT_OVERRIDE_NAME AND NOT PROJECT_OVERRIDE_NAME STREQUAL "")
+    set(PROJ_NAME ${PROJECT_OVERRIDE_NAME})
+endif()
+
 if(NOT DEFINED PROJ_NAME OR PROJ_NAME STREQUAL "")
     message(FATAL_ERROR "No project name set in config.cmake for PYLib-JSONGenerator.")
 endif()
 
+project(${PROJ_NAME} LANGUAGES NONE)
+
 set(JSONGEN_NAMESPACE "${PROJ_NAME}")
 set(${JSONGEN_NAMESPACE}_PROJ_NAME "${PROJ_NAME}")
-
-project(${PROJ_NAME} LANGUAGES NONE)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
